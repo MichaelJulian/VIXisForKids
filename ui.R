@@ -8,23 +8,29 @@
 library(shiny)
 
 shinyUI(fluidPage(
-
+  
   # Application title
-  titlePanel("Old Faithful Geyser Data"),
+  titlePanel("Silly Trader, VIX is For Kids!"),
 
   # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
+      h3('VIX:'), textOutput('VIX'),
+      h4('fuck with it'),
+      numericInput('strike','Strike',900,step=5),
+      numericInput('inc','Increment Midpoint', 0, step=.025),
+      actionButton("goButton", "Go!")
     ),
 
     # Show a plot of the generated distribution
     mainPanel(
-      plotOutput("distPlot")
+      tabsetPanel(
+        tabPanel('Expiry 1', plotOutput('contributionPlot1'),
+                 dataTableOutput('chain1')),
+        tabPanel('Expiry 2', plotOutput('contributionPlot2'),
+                 dataTableOutput('chain2'))
+        #tabPanel('Expiry 2', plotOutput(output$contributionPlot1), 
+         #        tableOutput('chain1')),
     )
   )
-))
+)))

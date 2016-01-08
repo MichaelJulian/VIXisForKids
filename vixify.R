@@ -32,12 +32,9 @@ returnForwardLevel <- function(call, put, R, TTE){
   data.table(Forward,Strike=FStrike$Strike,QK0)
 }
 
-chain <- calls_SPX1 
-TTE <- TTE1
+
 returnEligibleOptions <- function(chain,fwd,R,TTE){
   ERT <- exp(R*TTE)
-  
-  
   isCALL <- grepl('C',as.character(chain[,Symbol][1]))
   N <- dim(chain)[1]
   chain[,prevStrike := c(2*Strike[1]-Strike[2],Strike[1:(N-1)])]
@@ -60,8 +57,6 @@ returnEligibleOptions <- function(chain,fwd,R,TTE){
     chain[1:i, eligible := FALSE]
     chain[Strike >= K0, eligible := FALSE]
   }
-  chain
-  chain[, Mid := (Bid + Ask)/2]  
   chain[, K2 := (Strike^2)]
   chain[, contribution := (deltaK/K2)*ERT*Mid]
   chain[chain$eligible]
@@ -69,13 +64,16 @@ returnEligibleOptions <- function(chain,fwd,R,TTE){
 
 variance <- function(calls, puts,R,TTE,fwd) {
   ERT <- exp(R*TTE)
+  QK0 <- fwd$QK0
   atm <- data.table(deltaK=5,
                     K2=fwd$Strike^2,
+                    Bid=QK0,
                     Mid=QK0,
+                    Ask=QK0,
                     contribution=(5/(fwd$Strike^2))*ERT*QK0)
-  chain <- rbind(puts[,.(deltaK,K2,Mid,contribution)],
+  chain <- rbind(puts[,.(deltaK,K2,Bid,Mid,Ask,contribution)],
                  atm,
-                 calls[,.(deltaK,K2,Mid,contribution)])
+                 calls[,.(deltaK,K2,Bid,Mid,Ask,contribution)])
   
   carry <- (1/TTE1)*(fwd$Forward/fwd$Strike -1)^2
   list(var=(2/TTE1)*sum(chain[,.(x=(deltaK/K2)*Mid)]) - carry,

@@ -11,11 +11,12 @@ SPXURL <- "http://finance.yahoo.com/q/op?s=^SPX"
 getRiskFreeRate <- function(){  
   treasury <- xmlParse('http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE)%20eq%201%20and%20year(NEW_DATE)%20eq%202016')
   treasury_list <- xmlToList(treasury)
-  treasury_n <- length(treas_list)
+  treasury_n <- length(treasury_list)
   R <- as.numeric(treasury_list[treasury_n-1][[1]]$content$properties$BC_1MONTH$text)
   R <- R/100
   R
 }
+
 
 # Scrape Yahoo ^SPX Expiries
 getExpiries <- function(SPXURL){
@@ -44,5 +45,6 @@ clean <- function(chain){
     chain[,i] <- as.numeric(as.character(chain[,i]))    
   }
   chain <- as.data.table(chain)
+  chain[, Mid := (Bid + Ask)/2]
 
 }
