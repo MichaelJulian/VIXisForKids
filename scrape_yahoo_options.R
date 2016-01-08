@@ -4,31 +4,30 @@ library(RCurl)
 library(XML)
 library(data.table)
 
-# Declare Variables
+# Declare variables
 SPXURL <- "http://finance.yahoo.com/q/op?s=^SPX"
-SPX_LAST <- getQuote('^SPX')$Last
+
+# Scrape Risk Free Rate
+getRiskFreeRate <- function(){  
+  treasury <- xmlParse('http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE)%20eq%201%20and%20year(NEW_DATE)%20eq%202016')
+  treasury_list <- xmlToList(treasury)
+  treasury_n <- length(treas_list)
+  R <- as.numeric(treasury_list[treasury_n-1][[1]]$content$properties$BC_1MONTH$text)
+  R <- R/100
+  R
+}
 
 # Scrape Yahoo ^SPX Expiries
-webpage <- getURL(SPXURL)
-htmlpage <- htmlParse(webpage, asText=T)
-pageoptions <- xpathSApply(htmlpage, "//option", function(u) xmlAttrs(u)["value"])
-expiries_UNIX <- as.numeric(as.vector(pageoptions))
-
-ExpiryInfo <- data.table(expiries_UNIX,
-           SecondsTo30Day = abs(expiries_UNIX-as.numeric(Sys.time() + 30*24*60*60)))
-  
-VIX_Expiries <- ExpiryInfo[order(SecondsTo30Day)][1:2]
-
-# Scrape First Expiry Options
-tables <- readHTMLTable(paste0(SPXURL,"&date=", VIX_Expiries$expiries_UNIX[1]))
-calls_SPX1 <- clean(as.data.table(tables[[2]]))
-puts_SPX1 <- clean(as.data.table(tables[[3]]))
-
-# Scrape Second Expiry Options
-tables <- readHTMLTable(paste0(SPXURL,"&date=", VIX_Expiries$expiries_UNIX[2]))
-calls_SPX2 <- clean(as.data.table(tables[[2]]))
-puts_SPX2 <- clean(as.data.table(tables[[3]]))
-rm(tables)
+getExpiries <- function(SPXURL){
+  webpage <- getURL(SPXURL)
+  htmlpage <- htmlParse(webpage, asText=T)
+  pageoptions <- xpathSApply(htmlpage, "//option", function(u) xmlAttrs(u)["value"])
+  expiries_UNIX <- as.numeric(as.vector(pageoptions))
+  ExpiryInfo <- data.table(expiries_UNIX,
+                           SecondsTo30Day = abs(expiries_UNIX-as.numeric(Sys.time() + 30*24*60*60)))
+  TrueExpiries <- ExpiryInfo[order(SecondsTo30Day)][1:2]
+  TrueExpiries
+}
 
 ## PRE:
 # chain: data.table of option chain
@@ -36,6 +35,7 @@ rm(tables)
 clean <- function(chain){
   chain <- sapply(chain, as.character) # factor -> character
   chain <- sub("%", "", chain)
+  chain <- sub("SPXW", "", chain)
   chain <- as.data.frame(chain)
   chain$V1 <- sub(",", "", chain$V1)
   names(chain) <- c('Strike','Symbol','Last', 'Bid', 'Ask', 'Change',
@@ -44,4 +44,5 @@ clean <- function(chain){
     chain[,i] <- as.numeric(as.character(chain[,i]))    
   }
   chain <- as.data.table(chain)
+
 }
