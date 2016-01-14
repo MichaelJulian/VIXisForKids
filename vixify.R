@@ -76,6 +76,12 @@ variance <- function(calls, puts,R,TTE,fwd) {
                  calls[,.(deltaK,K2,Bid,Mid,Ask,contribution)])
   
   carry <- (1/TTE1)*(fwd$Forward/fwd$Strike -1)^2
-  list(var=(2/TTE1)*sum(chain[,.(x=(deltaK/K2)*Mid)]) - carry,
+  list(var=(2/TTE1)*sum(chain[,contribution]) - carry,
        chain)
 }
+
+puts_SPX1[,.(deltaK,Mid,Strike)]
+rawvar <- function(chain, R, TTE){
+  
+}  
+  
